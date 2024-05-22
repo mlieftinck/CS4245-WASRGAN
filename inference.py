@@ -21,6 +21,7 @@ from torch import nn
 import model
 from imgproc import preprocess_one_image, tensor_to_image
 from utils import load_pretrained_state_dict
+import time
 
 
 def main(args):
@@ -67,14 +68,18 @@ def build_model(model_arch_name: str, device: torch.device) -> nn.Module:
 
 
 if __name__ == "__main__":
+    test_image_path = "./figure/comic.png"
+    test_output_path = "./figure/sr_comic.png"
+    device = "cpu"
+    start = time.time()
     parser = argparse.ArgumentParser()
     parser.add_argument("--inputs",
                         type=str,
-                        default="./figure/comic.png",
+                        default=test_image_path,
                         help="Original image path.")
     parser.add_argument("--output",
                         type=str,
-                        default="./figure/sr_comic.png",
+                        default=test_output_path,
                         help="Super-resolution image path.")
     parser.add_argument("--model_arch_name",
                         type=str,
@@ -93,8 +98,10 @@ if __name__ == "__main__":
                         help="Use half precision.")
     parser.add_argument("--device",
                         type=str,
-                        default="cuda:0",
+                        default=device,
                         help="Device to run model.")
     args = parser.parse_args()
 
     main(args)
+    t = time.time() - start
+    print(f"Total inference time: {t // 60:.0f}m {t % 60:.0f}s")
