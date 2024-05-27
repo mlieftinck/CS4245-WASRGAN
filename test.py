@@ -23,7 +23,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 import model
-from dataset import CUDAPrefetcher, PairedImageDataset
+from dataset import CUDAPrefetcher, PairedImageDataset, CPUPrefetcher
 from imgproc import tensor_to_image
 from utils import build_iqa_model, load_pretrained_state_dict, make_directory, AverageMeter, ProgressMeter, Summary
 
