@@ -154,13 +154,29 @@ def main() -> None:
                         type=str,
                         default="./configs/test/SRGAN_x4-SRGAN_ImageNet-Set5.yaml",
                         required=True,
-                        help="Path to test config file.")
+                        help="Path to   config file.")
+    parser.add_argument("--device",
+                    type=str,
+                    default="cpu",
+                    required=False,
+                    help="device (cpu/cuda/mps)")
+    
     args = parser.parse_args()
 
     with open(args.config_path, "r") as f:
         config = yaml.full_load(f)
 
-    device = torch.device("cuda", config["DEVICE_ID"])
+
+    device = None
+    if args.device == "mps" and torch.backends.mps.is_available():
+        device = torch.device("mps")
+    elif device == "cuda":
+        device = torch.device("cuda", config["DEVICE_ID"])
+    else:
+        device = torch.device("cpu")
+    
+    print("device:", device)
+    
     test_data_prefetcher = load_dataset(config, device)
     g_model = build_model(config, device)
     psnr_model, ssim_model = build_iqa_model(
