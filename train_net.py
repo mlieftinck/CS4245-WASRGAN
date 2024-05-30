@@ -40,7 +40,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_path",
                         type=str,
-                        default="./configs/train/WASRGAN_4x-raw-kaggle.yaml",
+                        default="./configs/train/WASRGAN_x4-raw-kaggle.yaml",
                         help="Path to train config file.")
     args = parser.parse_args()
 
