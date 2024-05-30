@@ -35,12 +35,12 @@ from utils import build_iqa_model, load_resume_state_dict, load_pretrained_state
     Summary, AverageMeter, ProgressMeter
 
 
-def main():
+def main(config_path="./configs/train/SRResNet_x4-SRGAN_ImageNet-Set5.yaml"):
     # Read parameters from configuration file
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_path",
                         type=str,
-                        default="./configs/train/SRResNet_x4-SRGAN_ImageNet-Set5.yaml",
+                        default=config_path,
                         help="Path to train config file.")
     args = parser.parse_args()
 
