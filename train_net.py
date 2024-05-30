@@ -162,9 +162,14 @@ def load_dataset(
         device: torch.device,
 ) -> [CUDAPrefetcher, CUDAPrefetcher]:
     # Load the train dataset
+
+    lr_images_dir = None
+    if config["TRAIN"]["DATASET"]["TRAIN_LR_IMAGES_DIR"]:
+        lr_images_dir = config["TRAIN"]["DATASET"]["TRAIN_LR_IMAGES_DIR"]
+
     degenerated_train_datasets = BaseImageDataset(
         config["TRAIN"]["DATASET"]["TRAIN_GT_IMAGES_DIR"],
-        None,
+        lr_images_dir,
         config["SCALE"],
     )
 
