@@ -40,7 +40,7 @@ def main(path="./configs/train/SRResNet_x4-SRGAN_ImageNet-Set5.yaml"):
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_path",
                         type=str,
-                        default="./WASRGAN_x4-raw-kaggle.yaml",
+                        default=path,
                         help="Path to train config file.")
     # args = parser.parse_args()
     # Needed to be able to run in notebook (Kaggle)
