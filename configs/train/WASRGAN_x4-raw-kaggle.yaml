@@ -29,8 +29,8 @@ MODEL:
 
 TRAIN:
   DATASET:
-    TRAIN_GT_IMAGES_DIR: "kaggle/input/flickr2k/Flickr2K"
-    TRAIN_LR_IMAGES_DIR: "kaggle/input/wasrgan-train"
+    TRAIN_GT_IMAGES_DIR: "/kaggle/input/flickr2k/Flickr2K"
+    TRAIN_LR_IMAGES_DIR: "/kaggle/input/wasrgan-train"
 
     GT_IMAGE_SIZE: 96
 
@@ -87,8 +87,8 @@ TRAIN:
 TEST:
   DATASET:
     # !!! TRAINING SET AND TEST SET ARE THE SAME !!!
-    PAIRED_TEST_GT_IMAGES_DIR: "kaggle/input/flickr2k/Flickr2K"  # "./data/Set5/X4/GT"
-    PAIRED_TEST_LR_IMAGES_DIR: "kaggle/input/wasrgan-train"  # "./data/Set5/X4/LR"
+    PAIRED_TEST_GT_IMAGES_DIR: "/kaggle/input/flickr2k/Flickr2K"  # "./data/Set5/X4/GT"
+    PAIRED_TEST_LR_IMAGES_DIR: "/kaggle/input/wasrgan-train"  # "./data/Set5/X4/LR"
 
   # Test hyperparameters
   HYP:
