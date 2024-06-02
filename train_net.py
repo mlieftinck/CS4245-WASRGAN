@@ -42,7 +42,9 @@ def main(path="./configs/train/SRResNet_x4-SRGAN_ImageNet-Set5.yaml"):
                         type=str,
                         default=path,
                         help="Path to train config file.")
-    args = parser.parse_args()
+    # args = parser.parse_args()
+    # Needed to be able to run in notebook (Kaggle)
+    args, unknown = parser.parse_known_args()
 
     with open(args.config_path, "r") as f:
         config = yaml.full_load(f)
