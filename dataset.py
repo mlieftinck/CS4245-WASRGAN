@@ -80,6 +80,7 @@ class BaseImageDataset(Dataset):
         gt_tensor = image_to_tensor(gt_image, False, False)
 
         # Read a batch of low-resolution images
+        print(self.lr_image_file_names[:5])
         if self.lr_image_file_names is not None:
             lr_image = cv2.imread(self.lr_image_file_names[batch_index]).astype(np.float32) / 255.
             lr_image = cv2.cvtColor(lr_image, cv2.COLOR_BGR2RGB)
