@@ -17,6 +17,7 @@ import random
 import time
 from typing import Any
 
+import cv2
 import numpy as np
 import torch
 import yaml
@@ -313,6 +314,7 @@ def train(
         # Mixed precision training
         with amp.autocast():
             sr = g_model(lr)
+            sr = cv2.resize(sr, gt.size())
             pixel_loss = pixel_criterion(sr, gt)
             pixel_loss = torch.sum(torch.mul(loss_weight, pixel_loss))
 
