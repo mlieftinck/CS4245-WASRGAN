@@ -36,7 +36,7 @@ TRAIN:
   # Model file address, used for pre-training and recovery training
   CHECKPOINT:
     PRETRAINED_G_MODEL: "./results/SRResNet_x4-SRGAN_ImageNet/g_last.pth.tar"
-    PRETRAINED_D_MODEL: ""
+    PRETRAINED_D_MODEL: "./results/SRResNet_x4-SRGAN_ImageNet/d_last.pth.tar"
     RESUMED_G_MODEL: ""
     RESUMED_D_MODEL: ""
 
@@ -44,9 +44,9 @@ TRAIN:
   HYP:
     EPOCHS: 18
 
-    IMGS_PER_BATCH: 16
+    IMGS_PER_BATCH: 32
     SHUFFLE: True
-    NUM_WORKERS: 4
+    NUM_WORKERS: 6
     PIN_MEMORY: True
     PERSISTENT_WORKERS: True
 

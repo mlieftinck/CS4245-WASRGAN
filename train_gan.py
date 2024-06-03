@@ -262,12 +262,16 @@ def build_model(
         ema_g_model = None
 
     # compile model
+    backend = "inductor"
+    if torch.device == "mps":
+        backend = "aot_eager"
+        x
     if config["MODEL"]["G"]["COMPILED"]:
-        g_model = torch.compile(g_model)
+        g_model = torch.compile(g_model, backend=backend)
     if config["MODEL"]["D"]["COMPILED"]:
-        d_model = torch.compile(d_model)
+        d_model = torch.compile(d_model, backend=backend)
     if config["MODEL"]["EMA"]["COMPILED"] and ema_g_model is not None:
-        ema_g_model = torch.compile(ema_g_model)
+        ema_g_model = torch.compile(ema_g_model, backend=backend)
 
     return g_model, ema_g_model, d_model
 

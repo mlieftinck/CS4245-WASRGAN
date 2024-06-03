@@ -26,9 +26,10 @@ from torch.cuda import amp
 from torch.optim.swa_utils import AveragedModel
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from datetime import datetime, timedelta
 
 import model
-from dataset import CUDAPrefetcher, BaseImageDataset, PairedImageDataset
+from dataset import CPUPrefetcher, BaseImageDataset, PairedImageDataset
 from imgproc import random_crop_torch, random_rotate_torch, random_vertically_flip_torch, random_horizontally_flip_torch
 from test import test
 from utils import build_iqa_model, load_resume_state_dict, load_pretrained_state_dict, make_directory, save_checkpoint, \
@@ -42,7 +43,24 @@ def main():
                         type=str,
                         default="./configs/train/SRResNet_x4-SRGAN_ImageNet-Set5.yaml",
                         help="Path to train config file.")
+    parser.add_argument("--device",
+                    type=str,
+                    default="cpu",
+                    required=False,
+                    help="device (cpu/cuda/mps)")
+    
     args = parser.parse_args()
+
+    device = None
+    if args.device == "mps" and torch.backends.mps.is_available():
+        device = torch.device("mps")
+    elif device == "cuda":
+        device = torch.device("cuda", config["DEVICE_ID"])
+    else:
+        device = torch.device("cpu")
+
+    
+    print("device:", device)
 
     with open(args.config_path, "r") as f:
         config = yaml.full_load(f)
@@ -66,8 +84,7 @@ def main():
     best_psnr = 0.0
     best_ssim = 0.0
 
-    # Define the running device number
-    device = torch.device("cuda", config["DEVICE_ID"])
+
 
     # Define the basic functions needed to start training
     train_data_prefetcher, paired_test_data_prefetcher = load_dataset(config, device)
@@ -115,6 +132,7 @@ def main():
     writer = SummaryWriter(os.path.join("samples", "logs", config["EXP_NAME"]))
 
     for epoch in range(start_epoch, config["TRAIN"]["HYP"]["EPOCHS"]):
+        print('epoch', epoch, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         train(g_model,
               ema_g_model,
               train_data_prefetcher,
@@ -160,11 +178,11 @@ def main():
 def load_dataset(
         config: Any,
         device: torch.device,
-) -> [CUDAPrefetcher, CUDAPrefetcher]:
+) -> [CPUPrefetcher, CPUPrefetcher]:
     # Load the train dataset
     degenerated_train_datasets = BaseImageDataset(
         config["TRAIN"]["DATASET"]["TRAIN_GT_IMAGES_DIR"],
-        None,
+        config["TRAIN"]["DATASET"]["TRAIN_LR_IMAGES_DIR"],
         config["SCALE"],
     )
 
@@ -189,8 +207,8 @@ def load_dataset(
                                         persistent_workers=config["TEST"]["HYP"]["PERSISTENT_WORKERS"])
 
     # Replace the data set iterator with CUDA to speed up
-    train_data_prefetcher = CUDAPrefetcher(degenerated_train_dataloader, device)
-    paired_test_data_prefetcher = CUDAPrefetcher(paired_test_dataloader, device)
+    train_data_prefetcher = CPUPrefetcher(degenerated_train_dataloader)
+    paired_test_data_prefetcher = CPUPrefetcher(paired_test_dataloader)
 
     return train_data_prefetcher, paired_test_data_prefetcher
 
@@ -203,6 +221,7 @@ def build_model(
                                                            out_channels=config["MODEL"]["G"]["OUT_CHANNELS"],
                                                            channels=config["MODEL"]["G"]["CHANNELS"],
                                                            num_rcb=config["MODEL"]["G"]["NUM_RCB"])
+    print("device:", device)
     g_model = g_model.to(device)
 
     if config["MODEL"]["EMA"]["ENABLE"]:
@@ -215,10 +234,16 @@ def build_model(
         ema_g_model = None
 
     # compile model
+    backend = "inductor"
+    if device.type == "mps":
+        backend = "aot_eager"
+
+    print("backend", backend, device.type)
+
     if config["MODEL"]["G"]["COMPILED"]:
-        g_model = torch.compile(g_model)
+        g_model = torch.compile(g_model, backend=backend)
     if config["MODEL"]["EMA"]["COMPILED"] and ema_g_model is not None:
-        ema_g_model = torch.compile(ema_g_model)
+        ema_g_model = torch.compile(ema_g_model, backend=backend)
 
     return g_model, ema_g_model
 
@@ -249,7 +274,7 @@ def define_optimizer(g_model: nn.Module, config: Any) -> optim.Adam:
 def train(
         g_model: nn.Module,
         ema_g_model: nn.Module,
-        train_data_prefetcher: CUDAPrefetcher,
+        train_data_prefetcher: CPUPrefetcher,
         pixel_criterion: nn.MSELoss,
         optimizer: optim.Adam,
         epoch: int,
@@ -316,7 +341,7 @@ def train(
         scaler.update()
 
         if config["MODEL"]["EMA"]["ENABLE"]:
-            # update exponentially averaged model weights
+            # update exponentially averaged model '\weights
             ema_g_model.update_parameters(g_model)
 
         # record the loss value
@@ -341,4 +366,13 @@ def train(
 
 
 if __name__ == "__main__":
+    start_time = datetime.now()
+
+    print('STARTED', start_time.strftime("%Y-%m-%d %H:%M:%S"))
     main()
+
+    finish_time = datetime.now()
+    duration = finish_time - start_time
+
+    print('DONE', finish_time.strftime("%Y-%m-%d %H:%M:%S"))
+    print('DURATION', timedelta(seconds=duration.total_seconds()))

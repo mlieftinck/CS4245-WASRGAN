@@ -36,7 +36,7 @@ class BaseImageDataset(Dataset):
     def __init__(
             self,
             gt_images_dir: str,
-            lr_images_dir: str = None,
+            lr_images_dir: str,
             upscale_factor: int = 4,
     ) -> None:
         """
@@ -85,6 +85,7 @@ class BaseImageDataset(Dataset):
             lr_tensor = image_to_tensor(lr_image, False, False)
         else:
             lr_tensor = image_resize(gt_tensor, 1 / self.upscale_factor)
+            print("resizing GT")
 
         return {"gt": gt_tensor,
                 "lr": lr_tensor}
