@@ -75,11 +75,14 @@ class BaseImageDataset(Dataset):
             batch_index: int
     ) -> [Tensor, Tensor]:
         # Read a batch of ground truth images
+        print("Here you should see the first 5 gt image paths:")
+        print(self.gt_image_file_names[:5])
         gt_image = cv2.imread(self.gt_image_file_names[batch_index]).astype(np.float32) / 255.
         gt_image = cv2.cvtColor(gt_image, cv2.COLOR_BGR2RGB)
         gt_tensor = image_to_tensor(gt_image, False, False)
 
         # Read a batch of low-resolution images
+        print("Here you should see the first 5 lr image paths:")
         print(self.lr_image_file_names[:5])
         if self.lr_image_file_names is not None:
             lr_image = cv2.imread(self.lr_image_file_names[batch_index]).astype(np.float32) / 255.
