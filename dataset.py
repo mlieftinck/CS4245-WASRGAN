@@ -66,7 +66,7 @@ class BaseImageDataset(Dataset):
             image_file_names_lr = natsorted(os.listdir(lr_images_dir))
             image_file_names_gt = natsorted(os.listdir(gt_images_dir))
             self.lr_image_file_names = [os.path.join(lr_images_dir, image_file_name) for image_file_name in image_file_names_lr]
-            self.gt_image_file_names = [os.path.join(gt_images_dir, image_file_name) for image_file_name in image_file_names_gt]
+            self.gt_image_file_names = [os.path.join(gt_images_dir, image_file_name) for image_file_name in image_file_names_gt[:len(self.lr_image_file_names)]]
 
         self.upscale_factor = upscale_factor
 
