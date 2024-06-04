@@ -29,7 +29,7 @@ MODEL:
 
 TRAIN:
   DATASET:
-    TRAIN_GT_IMAGES_DIR: "./data/SRGAN_ImageNet_train_GT_sub"
+    TRAIN_GT_IMAGES_DIR: "./data/Flickr500"
 
     GT_IMAGE_SIZE: 96
 

@@ -116,13 +116,16 @@ class PairedImageDataset(Dataset):
             raise FileNotFoundError(f"Registered high-resolution image address does not exist: {paired_gt_images_dir}")
 
         # Get a list of all image filenames
-        image_files = natsorted(os.listdir(paired_lr_images_dir))
-        self.paired_gt_image_file_names = [os.path.join(paired_gt_images_dir, x) for x in image_files]
-        self.paired_lr_image_file_names = [os.path.join(paired_lr_images_dir, x) for x in image_files]
+        image_files_lr = natsorted(os.listdir(paired_lr_images_dir))
+        image_files_gt = natsorted(os.listdir(paired_gt_images_dir))
+        self.paired_gt_image_file_names = [os.path.join(paired_gt_images_dir, x) for x in image_files_gt]
+        self.paired_lr_image_file_names = [os.path.join(paired_lr_images_dir, x) for x in image_files_lr]
 
     def __getitem__(self, batch_index: int) -> [Tensor, Tensor, str]:
         # Read a batch of image data
+        print("batch index:", batch_index)
         gt_image = cv2.imread(self.paired_gt_image_file_names[batch_index]).astype(np.float32) / 255.
+
         lr_image = cv2.imread(self.paired_lr_image_file_names[batch_index]).astype(np.float32) / 255.
 
         # BGR convert RGB
