@@ -22,8 +22,8 @@ from tqdm import tqdm
 
 def main():
     args = {
-        "inputs_dir": "./data/SRGAN_ImageNet",  # Path to input image directory.
-        "output_dir": "./data/SRGAN_ImageNet_train_GT_sub",  # Path to generator image directory.
+        "inputs_dir": "./data/Flickr2Kxs",  # Path to input image directory.
+        "output_dir": "./data/Flickr2Kxs_train_GT_sub",  # Path to generator image directory.
         "crop_size": 128,  # Crop image size from raw image.
         "step": 64,  # Step size of sliding window.
         "thresh_size": 0,  # Threshold size. If the remaining image is less than the threshold, it will not be cropped.
@@ -54,6 +54,8 @@ def split_images(args: dict):
     output_dir = args["output_dir"]
     num_workers = args["num_workers"]
 
+    print("image dir", inputs_dir)
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         print(f"Create {output_dir} successful.")
@@ -63,6 +65,7 @@ def split_images(args: dict):
 
     # Get all image paths
     image_file_paths = os.listdir(inputs_dir)
+    
 
     # Splitting images with multiple threads
     progress_bar = tqdm(total=len(image_file_paths), unit="image", desc="Split image")

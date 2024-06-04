@@ -15,6 +15,7 @@ import argparse
 import os
 import time
 from typing import Any
+from datetime import datetime
 
 import cv2
 import torch
@@ -23,7 +24,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 import model
-from dataset import CUDAPrefetcher, PairedImageDataset
+from dataset import CUDAPrefetcher, PairedImageDataset, CPUPrefetcher
 from imgproc import tensor_to_image
 from utils import build_iqa_model, load_pretrained_state_dict, make_directory, AverageMeter, ProgressMeter, Summary
 
@@ -38,7 +39,7 @@ def load_dataset(config: Any, device: torch.device) -> CUDAPrefetcher:
                                  pin_memory=config["TEST"]["HYP"]["PIN_MEMORY"],
                                  drop_last=False,
                                  persistent_workers=config["TEST"]["HYP"]["PERSISTENT_WORKERS"])
-    test_test_data_prefetcher = CUDAPrefetcher(test_dataloader, device)
+    test_test_data_prefetcher = CPUPrefetcher(test_dataloader)
 
     return test_test_data_prefetcher
 
@@ -51,26 +52,31 @@ def build_model(config: Any, device: torch.device):
     g_model = g_model.to(device)
 
     # compile model
+    backend = "inductor"
+    if torch.device == "mps":
+        backend = "aot_eager"
+
     if config["MODEL"]["G"]["COMPILED"]:
-        g_model = torch.compile(g_model)
+        g_model = torch.compile(g_model, backend=backend)
 
     return g_model
 
 
 def test(
         g_model: nn.Module,
-        test_data_prefetcher: CUDAPrefetcher,
+        test_data_prefetcher: CPUPrefetcher,
         psnr_model: nn.Module,
         ssim_model: nn.Module,
         device: torch.device,
         config: Any,
+
 ) -> [float, float]:
     save_image = False
     save_image_dir = ""
 
     if config["TEST"]["SAVE_IMAGE_DIR"]:
         save_image = True
-        save_image_dir = os.path.join(config["TEST"]["SAVE_IMAGE_DIR"], config["EXP_NAME"])
+        save_image_dir = os.path.join(config["TEST"]["SAVE_IMAGE_DIR"], config["EXP_NAME"] + "_" + datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
         make_directory(save_image_dir)
 
     # Calculate the number of iterations per epoch
