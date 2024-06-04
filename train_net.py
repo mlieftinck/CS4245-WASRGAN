@@ -17,6 +17,7 @@ import random
 import time
 from typing import Any
 
+import cv2
 import numpy as np
 import torch
 import yaml
@@ -36,20 +37,23 @@ from utils import build_iqa_model, load_resume_state_dict, load_pretrained_state
     Summary, AverageMeter, ProgressMeter
 
 
-def main():
+def main(path="./configs/train/SRResNet_x4-SRGAN_ImageNet-Set5.yaml"):
     # Read parameters from configuration file
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_path",
                         type=str,
-                        default="./configs/train/SRResNet_x4-SRGAN_ImageNet-Set5.yaml",
+                        default=path,
                         help="Path to train config file.")
+    
     parser.add_argument("--device",
                     type=str,
                     default="cpu",
                     required=False,
                     help="device (cpu/cuda/mps)")
     
-    args = parser.parse_args()
+    # args = parser.parse_args()
+    # Needed to be able to run in notebook (Kaggle)
+    args, unknown = parser.parse_known_args()
 
     device = None
     if args.device == "mps" and torch.backends.mps.is_available():
@@ -180,6 +184,11 @@ def load_dataset(
         device: torch.device,
 ) -> [CPUPrefetcher, CPUPrefetcher]:
     # Load the train dataset
+
+    lr_images_dir = None
+    if config["TRAIN"]["DATASET"]["TRAIN_LR_IMAGES_DIR"]:
+        lr_images_dir = config["TRAIN"]["DATASET"]["TRAIN_LR_IMAGES_DIR"]
+
     degenerated_train_datasets = BaseImageDataset(
         config["TRAIN"]["DATASET"]["TRAIN_GT_IMAGES_DIR"],
         config["TRAIN"]["DATASET"]["TRAIN_LR_IMAGES_DIR"],
@@ -331,6 +340,7 @@ def train(
         # Mixed precision training
         with amp.autocast():
             sr = g_model(lr)
+            sr = cv2.resize(sr, gt.size())
             pixel_loss = pixel_criterion(sr, gt)
             pixel_loss = torch.sum(torch.mul(loss_weight, pixel_loss))
 
