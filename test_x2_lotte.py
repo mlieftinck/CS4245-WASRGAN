@@ -172,7 +172,7 @@ def main() -> None:
     with open(args.config_path, "r") as f:
         config = yaml.full_load(f)
 
-
+    print(args.device)
     device = None
     if args.device == "mps" and torch.backends.mps.is_available():
         device = torch.device("mps")
