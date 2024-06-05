@@ -172,14 +172,13 @@ def main() -> None:
     with open(args.config_path, "r") as f:
         config = yaml.full_load(f)
 
-    print(args.device)
-    device = None
-    if args.device == "mps" and torch.backends.mps.is_available():
-        device = torch.device("mps")
-    elif device == "cuda":
-        device = torch.device("cuda", config["DEVICE_ID"])
-    else:
-        device = torch.device("cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # if args.device == "mps" and torch.backends.mps.is_available():
+    #     device = torch.device("mps")
+    # elif device == "cuda":
+    #     device = torch.device("cuda", config["DEVICE_ID"])
+    # else:
+    #     device = torch.device("cpu")
     
     print("device:", device)
     
