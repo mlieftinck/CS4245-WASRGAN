@@ -81,6 +81,8 @@ def test(
 
     # Calculate the number of iterations per epoch
     batches = len(test_data_prefetcher)
+    print('batches', batches)
+
     # Interval printing
     if batches > 100:
         print_freq = 100

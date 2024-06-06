@@ -3,7 +3,7 @@ EXP_NAME: SRResNet_x4-SRGAN_ImageNet
 # random number seed
 SEED: 0
 # super resolution magnification factor
-SCALE: 4
+SCALE: 2
 # run device model
 DEVICE_ID: 0
 

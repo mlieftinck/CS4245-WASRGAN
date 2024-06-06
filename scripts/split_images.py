@@ -22,8 +22,10 @@ from tqdm import tqdm
 
 def main():
     args = {
-        "inputs_dir": "./data/Flickr2Kxs",  # Path to input image directory.
-        "output_dir": "./data/Flickr2Kxs_train_GT_sub",  # Path to generator image directory.
+        # "inputs_dir": "./data/Flickr2k_LRWRGT/dataset_GT",  # Path to input image directory.
+        # "output_dir": "./data/Flickr2k_LRWRGT/dataset_GT_patches",  # Path to generator image directory.
+        "inputs_dir": "./data/Flickr2k_LRWRGT/dataset_LRW",  # Path to input image directory.
+        "output_dir": "./data/Flickr2k_LRWRGT/dataset_LRW_patches",  # Path to generator image directory.
         "crop_size": 128,  # Crop image size from raw image.
         "step": 64,  # Step size of sliding window.
         "thresh_size": 0,  # Threshold size. If the remaining image is less than the threshold, it will not be cropped.
@@ -94,6 +96,7 @@ def worker(image_file_path: str, args: dict):
     thresh_size = args["thresh_size"]
 
     image_name, extension = os.path.splitext(os.path.basename(image_file_path))
+
     image = cv2.imread(os.path.join(inputs_dir, image_file_path), cv2.IMREAD_UNCHANGED)
 
     image_height, image_width = image.shape[0:2]

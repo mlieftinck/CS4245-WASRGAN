@@ -29,7 +29,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 import model
-from dataset import CUDAPrefetcher, BaseImageDataset, PairedImageDataset
+from dataset import CUDAPrefetcher, BaseImageDataset, PairedImageDataset, CPUPrefetcher
 from imgproc import random_crop_torch, random_rotate_torch, random_vertically_flip_torch, random_horizontally_flip_torch
 from test import test
 from utils import build_iqa_model, load_resume_state_dict, load_pretrained_state_dict, make_directory, save_checkpoint, \
@@ -43,7 +43,22 @@ def main():
                         type=str,
                         default="./configs/train/SRGAN_x4-SRGAN_ImageNet-Set5.yaml",
                         help="Path to train config file.")
+    parser.add_argument("--device",
+                type=str,
+                default="cpu",
+                required=False,
+                help="device (cpu/cuda/mps)")
     args = parser.parse_args()
+
+    device = None
+    if args.device == "mps" and torch.backends.mps.is_available():
+        device = torch.device("mps")
+    elif device == "cuda":
+        device = torch.device("cuda", config["DEVICE_ID"])
+    else:
+        device = torch.device("cpu")
+    
+    print("device:", device)
 
     with open(args.config_path, "r") as f:
         config = yaml.full_load(f)
@@ -231,8 +246,8 @@ def load_dataset(
                                         persistent_workers=config["TEST"]["HYP"]["PERSISTENT_WORKERS"])
 
     # Replace the data set iterator with CUDA to speed up
-    train_data_prefetcher = CUDAPrefetcher(degenerated_train_dataloader, device)
-    paired_test_data_prefetcher = CUDAPrefetcher(paired_test_dataloader, device)
+    train_data_prefetcher = CPUPrefetcher(degenerated_train_dataloader)
+    paired_test_data_prefetcher = CPUPrefetcher(paired_test_dataloader)
 
     return train_data_prefetcher, paired_test_data_prefetcher
 
