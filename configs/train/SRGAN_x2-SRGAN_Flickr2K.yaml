@@ -14,12 +14,12 @@ MODEL:
     DECAY: 0.999
     COMPILED: True
   G:
-    NAME: srresnet_x4
+    NAME: srresnet_x2
     IN_CHANNELS: 3
     OUT_CHANNELS: 3
     CHANNELS: 64
     NUM_RCB: 16
-    COMPILED: True
+    COMPILED: False
   D:
     NAME: discriminator_for_vgg
     IN_CHANNELS: 3
@@ -36,8 +36,8 @@ TRAIN:
 
   # Model file address, used for pre-training and recovery training
   CHECKPOINT:
-    PRETRAINED_G_MODEL: "./results/SRResNet_x4-SRGAN_ImageNet/g_last.pth.tar"
-    PRETRAINED_D_MODEL: "./results/SRResNet_x4-SRGAN_ImageNet/d_last.pth.tar"
+    PRETRAINED_G_MODEL: "./results/pretrained_models/SRGAN_x2-SRGAN_ImageNet.pth.tar"
+    PRETRAINED_D_MODEL: "./results/pretrained_models/DiscriminatorForVGG_x2-SRGAN_ImageNet.pth.tar"
     RESUMED_G_MODEL: ""
     RESUMED_D_MODEL: ""
 
@@ -45,7 +45,7 @@ TRAIN:
   HYP:
     EPOCHS: 15
 
-    IMGS_PER_BATCH: 128
+    IMGS_PER_BATCH: 64
     SHUFFLE: True
     NUM_WORKERS: 4
     PIN_MEMORY: True

@@ -23,8 +23,8 @@ MODEL:
 
 TRAIN:
   DATASET:
-    TRAIN_GT_IMAGES_DIR: "./data/Flickr2Kxs_train_GT_sub"
-    TRAIN_LR_IMAGES_DIR: "./data/Flickr2Kxs_train_LR_sub"
+    TRAIN_GT_IMAGES_DIR: "./data/Flickr2k_LRWRGT/dataset_GT_patches"
+    TRAIN_LR_IMAGES_DIR: "./data/Flickr2k_LRWRGT/dataset_LRW_patches"
     
     # TRAIN_GT_IMAGES_DIR: "./data/Set5/X4/GT"
     # TRAIN_LR_IMAGES_DIR: "./data/Set5/X4/LR"
@@ -64,8 +64,8 @@ TRAIN:
 
 TEST:
   DATASET:
-    PAIRED_TEST_GT_IMAGES_DIR: "./data/Set5/X4/GT"
-    PAIRED_TEST_LR_IMAGES_DIR: "./data/Set5/X4/LR"
+    PAIRED_TEST_GT_IMAGES_DIR: "./data/Flickr2k_LRWRGT/testset_GT_patches"
+    PAIRED_TEST_LR_IMAGES_DIR: "./data/Flickr2k_LRWRGT/testset_LRW_patches"
 
   # Test hyperparameters
   HYP:

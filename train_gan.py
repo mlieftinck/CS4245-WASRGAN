@@ -82,8 +82,6 @@ def main():
     best_psnr = 0.0
     best_ssim = 0.0
 
-    # Define the running device number
-    device = torch.device("cuda", config["DEVICE_ID"])
 
     # Define the basic functions needed to start training
     train_data_prefetcher, paired_test_data_prefetcher = load_dataset(config, device)
@@ -133,6 +131,18 @@ def main():
         print(f"Loaded `{config['TRAIN']['CHECKPOINT']['RESUMED_D_MODEL']}` resume model weights successfully.")
     else:
         print("Resume training d model not found. Start training from scratch.")
+
+
+    # compile model
+    backend = "inductor"
+    if device == "mps":
+        backend = "aot_eager"
+
+    backend = "aot_eager" # temp
+
+    print('backend set to', backend, ', device to', device)
+    g_model = torch.compile(g_model, backend=backend)
+    d_model = torch.compile(d_model, backend=backend)
 
     # Initialize the image clarity evaluation method
     psnr_model, ssim_model = build_iqa_model(
@@ -217,11 +227,11 @@ def main():
 def load_dataset(
         config: Any,
         device: torch.device,
-) -> [CUDAPrefetcher, CUDAPrefetcher]:
+) -> [CPUPrefetcher, CPUPrefetcher]:
     # Load the train dataset
     degenerated_train_datasets = BaseImageDataset(
         config["TRAIN"]["DATASET"]["TRAIN_GT_IMAGES_DIR"],
-        None,
+        config["TRAIN"]["DATASET"]["TRAIN_LR_IMAGES_DIR"],
         config["SCALE"],
     )
 
@@ -278,15 +288,21 @@ def build_model(
 
     # compile model
     backend = "inductor"
-    if torch.device == "mps":
+    if "mps" in device.type:
+        print('mps enabled')
         backend = "aot_eager"
-        x
+    
+    print('device', device.type, 'inductor', backend)
+
     if config["MODEL"]["G"]["COMPILED"]:
         g_model = torch.compile(g_model, backend=backend)
+        print('g model compiled')
     if config["MODEL"]["D"]["COMPILED"]:
+        print('d model compiled')
         d_model = torch.compile(d_model, backend=backend)
     if config["MODEL"]["EMA"]["COMPILED"] and ema_g_model is not None:
         ema_g_model = torch.compile(ema_g_model, backend=backend)
+        
 
     return g_model, ema_g_model, d_model
 
