@@ -37,17 +37,17 @@ from utils import build_iqa_model, load_resume_state_dict, load_pretrained_state
     Summary, AverageMeter, ProgressMeter
 
 
-def main(path="./configs/train/SRResNet_x4-SRGAN_ImageNet-Set5.yaml"):
+def main():
     # Read parameters from configuration file
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_path",
                         type=str,
-                        default=path,
+                        default="./configs/train/WASRGAN_2x-kaggle.yaml",
                         help="Path to train config file.")
     
     parser.add_argument("--device",
                     type=str,
-                    default="cpu",
+                    default="cuda:0",
                     required=False,
                     help="device (cpu/cuda/mps)")
     
@@ -55,13 +55,13 @@ def main(path="./configs/train/SRResNet_x4-SRGAN_ImageNet-Set5.yaml"):
     # Needed to be able to run in notebook (Kaggle)
     args, unknown = parser.parse_known_args()
 
-    device = None
-    if args.device == "mps" and torch.backends.mps.is_available():
-        device = torch.device("mps")
-    elif device == "cuda":
-        device = torch.device("cuda", config["DEVICE_ID"])
-    else:
-        device = torch.device("cpu")
+    device = args.device
+    # if args.device == "mps" and torch.backends.mps.is_available():
+    #     device = torch.device("mps")
+    # elif device == "cuda":
+    #     device = torch.device("cuda", config["DEVICE_ID"])
+    # else:
+    #     device = torch.device("cpu")
 
     
     print("device:", device)
