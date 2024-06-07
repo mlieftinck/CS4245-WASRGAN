@@ -89,9 +89,11 @@ def test(
     # The information printed by the progress bar
     batch_time = AverageMeter("Time", ":6.3f", Summary.NONE)
     psnres = AverageMeter("PSNR", ":4.2f", Summary.AVERAGE)
+    psnres_sd = AverageMeter("PSNR", ":4.2f", Summary.SD)
     ssimes = AverageMeter("SSIM", ":4.4f", Summary.AVERAGE)
+    ssimes_sd = AverageMeter("SSIM", ":4.4f", Summary.SD)
     progress = ProgressMeter(len(test_data_prefetcher),
-                             [batch_time, psnres, ssimes],
+                             [batch_time, psnres, psnres_sd, ssimes, ssimes_sd],
                              prefix=f"Test: ")
 
     # set the model as validation model
@@ -123,6 +125,8 @@ def test(
             # record current metrics
             psnres.update(psnr.item(), sr.size(0))
             ssimes.update(ssim.item(), ssim.size(0))
+            psnres_sd.update(psnr.item(), sr.size(0))
+            ssimes_sd.update(ssim.item(), ssim.size(0))
 
             # Record the total time to verify a batch
             batch_time.update(time.time() - end)

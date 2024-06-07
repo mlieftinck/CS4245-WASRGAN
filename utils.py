@@ -18,6 +18,7 @@ from enum import Enum
 from typing import Any
 
 import torch
+import math
 import torch.backends.mps
 from torch import distributed as dist
 from torch import nn
@@ -197,6 +198,7 @@ class Summary(Enum):
     AVERAGE = 1
     SUM = 2
     COUNT = 3
+    SD = 4
 
 
 class AverageMeter(object):
@@ -211,12 +213,19 @@ class AverageMeter(object):
         self.avg = 0
         self.sum = 0
         self.count = 0
+        self.sd = 0
+        self.sum_sq = 0
 
     def update(self, val, n=1):
         self.val = val
         self.sum += val * n
+        self.sum_sq += (val ** 2) * n
         self.count += n
         self.avg = self.sum / self.count
+        if self.count > 1:
+            self.sd = math.sqrt((self.sum_sq - self.sum ** 2 / self.count) / (self.count - 1))
+        else:
+            self.sd = 0
 
     def all_reduce(self):
         if torch.cuda.is_available():
@@ -229,6 +238,10 @@ class AverageMeter(object):
         dist.all_reduce(total, dist.ReduceOp.SUM, async_op=False)
         self.sum, self.count = total.tolist()
         self.avg = self.sum / self.count
+        if self.count > 1:
+            self.sd = math.sqrt((self.sum_sq - self.sum ** 2 / self.count) / (self.count - 1))
+        else:
+            self.sd = 0
 
     def __str__(self):
         fmtstr = "{name} {val" + self.fmt + "} ({avg" + self.fmt + "})"
@@ -243,6 +256,8 @@ class AverageMeter(object):
             fmtstr = "{name} {sum:.4f}"
         elif self.summary_type is Summary.COUNT:
             fmtstr = "{name} {count:.4f}"
+        elif self.summary_type is Summary.SD:
+            fmtstr = "{name} {sd:.4f}"
         else:
             raise ValueError(f"Invalid summary type {self.summary_type}")
 

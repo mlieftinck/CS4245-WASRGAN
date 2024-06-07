@@ -20,8 +20,8 @@ MODEL:
 
 TEST:
   DATASET:
-    PAIRED_TEST_GT_IMAGES_DIR: "/kaggle/input/flickr/Flickr500/Flickr500/"
-    PAIRED_TEST_LR_IMAGES_DIR: "/kaggle/input/flickr/Flickr500x2/Flickr500x2/"
+    PAIRED_TEST_GT_IMAGES_DIR: "/kaggle/input/test-set/testset_GT_patches/testset_GT_patches"
+    PAIRED_TEST_LR_IMAGES_DIR: "/kaggle/input/test-set/testset_LRW_patches/testset_LRW_patches"
 
   # Test hyperparameters
   HYP:
@@ -34,4 +34,4 @@ TEST:
   # Only test Y channel
   ONLY_TEST_Y_CHANNEL: True
 
-  SAVE_IMAGE_DIR: "/kaggle/working/outputupscale"
+  SAVE_IMAGE_DIR: "/kaggle/working/output_patches_test"
