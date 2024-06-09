@@ -22,6 +22,7 @@ import torch
 import yaml
 from torch import nn
 from torch.utils.data import DataLoader
+import torch.nn.functional as F
 
 import model
 from dataset import CUDAPrefetcher, PairedImageDataset, CPUPrefetcher
@@ -43,26 +44,25 @@ def load_dataset(config: Any, device: torch.device) -> CUDAPrefetcher:
 
     return test_test_data_prefetcher
 
-def upsample_patch(image_patch):
+def upsample_patch(image_patch: torch.Tensor) -> torch.Tensor:
     """
     Upsamples a given image patch from 128x128 to 256x256 using bicubic interpolation.
 
     Parameters:
-    image_patch (numpy.ndarray): Input image patch of size 128x128.
+    image_patch (torch.Tensor): Input image patch of size 128x128.
 
     Returns:
-    numpy.ndarray: Upsampled image patch of size 256x256.
+    torch.Tensor: Upsampled image patch of size 256x256.
     """
     # Ensure the input patch is of size 128x128
-    # if image_patch.shape[0] != 128 or image_patch.shape[1] != 128:
-    #     print(image_patch)
-    #     print(image_patch.shape[0])
-    #     raise ValueError("Input image patch must be of size 128x128")
+    if image_patch.size(2) != 128 or image_patch.size(3) != 128:
+        raise ValueError("Input image patch must be of size 128x128")
 
     # Upsample the image patch to 256x256 using bicubic interpolation
-    upsampled_patch = cv2.resize(image_patch, (256, 256), interpolation=cv2.INTER_CUBIC)
+    upsampled_patch = F.interpolate(image_patch, size=(256, 256), mode='bicubic', align_corners=False)
 
     return upsampled_patch
+
 
 def test(test_data_prefetcher: CPUPrefetcher,
         psnr_model: nn.Module,
