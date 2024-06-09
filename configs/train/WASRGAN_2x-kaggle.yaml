@@ -29,14 +29,14 @@ MODEL:
 
 TRAIN:
   DATASET:
-    TRAIN_GT_IMAGES_DIR: "/kaggle/input/..."
-    TRAIN_LR_IMAGES_DIR: "/kaggle/input/..."
+    TRAIN_GT_IMAGES_DIR: "/kaggle/input/train-set/dataset_GT_patches/dataset_GT_patches"
+    TRAIN_LR_IMAGES_DIR: "/kaggle/input/train-set/dataset_LRW_patches/dataset_LRW_patches"
 
     GT_IMAGE_SIZE: 96
 
   # Model file address, used for pre-training and recovery training
   CHECKPOINT:
-    PRETRAINED_G_MODEL: "./results/SRResNet_x2-SRGAN_ImageNet/g_last.pth.tar"
+    PRETRAINED_G_MODEL: "./results/pretrained_models/SRGAN_x2-SRGAN_ImageNet.pth.tar"
     PRETRAINED_D_MODEL: ""
     RESUMED_G_MODEL: ""
     RESUMED_D_MODEL: ""
@@ -86,8 +86,8 @@ TRAIN:
 
 TEST:
   DATASET:
-    PAIRED_TEST_GT_IMAGES_DIR: "/kaggle/input/..."
-    PAIRED_TEST_LR_IMAGES_DIR: "/kaggle/input/..."
+    PAIRED_TEST_GT_IMAGES_DIR: "/kaggle/input/test-set/testset_GT_patches/testset_GT_patches"
+    PAIRED_TEST_LR_IMAGES_DIR: "/kaggle/input/test-set/testset_LRW_patches/testset_LRW_patches"
 
   # Test hyperparameters
   HYP:
