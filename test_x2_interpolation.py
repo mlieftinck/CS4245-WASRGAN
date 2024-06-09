@@ -112,7 +112,7 @@ def test(test_data_prefetcher: CPUPrefetcher,
         lr = batch_data["lr"].to(device, non_blocking=True)
 
         # Reasoning
-        sr = upsample_patch(lr[0])
+        sr = upsample_patch(lr)
 
         # Calculate the image sharpness evaluation index
         psnr = psnr_model(sr, gt)
