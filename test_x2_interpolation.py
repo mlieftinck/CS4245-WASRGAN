@@ -55,6 +55,8 @@ def upsample_patch(image_patch):
     """
     # Ensure the input patch is of size 128x128
     if image_patch.shape[0] != 128 or image_patch.shape[1] != 128:
+        print(image_patch)
+        print(image_patch.shape[0])
         raise ValueError("Input image patch must be of size 128x128")
 
     # Upsample the image patch to 256x256 using bicubic interpolation
