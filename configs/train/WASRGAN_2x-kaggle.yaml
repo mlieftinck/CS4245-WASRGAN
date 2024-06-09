@@ -36,7 +36,7 @@ TRAIN:
 
   # Model file address, used for pre-training and recovery training
   CHECKPOINT:
-    PRETRAINED_G_MODEL: "./results/pretrained_models/SRGAN_x2-SRGAN_ImageNet.pth.tar"
+    PRETRAINED_G_MODEL: "/kaggle/input/eval-dataset-lotte/results/pretrained_models/SRGAN_x2-SRGAN_ImageNet.pth.tar"
     PRETRAINED_D_MODEL: ""
     RESUMED_G_MODEL: ""
     RESUMED_D_MODEL: ""
