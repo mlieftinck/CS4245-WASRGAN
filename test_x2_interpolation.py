@@ -54,10 +54,10 @@ def upsample_patch(image_patch):
     numpy.ndarray: Upsampled image patch of size 256x256.
     """
     # Ensure the input patch is of size 128x128
-    if image_patch.shape[0] != 128 or image_patch.shape[1] != 128:
-        print(image_patch)
-        print(image_patch.shape[0])
-        raise ValueError("Input image patch must be of size 128x128")
+    # if image_patch.shape[0] != 128 or image_patch.shape[1] != 128:
+    #     print(image_patch)
+    #     print(image_patch.shape[0])
+    #     raise ValueError("Input image patch must be of size 128x128")
 
     # Upsample the image patch to 256x256 using bicubic interpolation
     upsampled_patch = cv2.resize(image_patch, (256, 256), interpolation=cv2.INTER_CUBIC)
