@@ -244,7 +244,7 @@ def build_model(
 
     # compile model
     backend = "inductor"
-    if device.type == "mps":
+    if device == "mps":
         backend = "aot_eager"
 
     print("backend", backend, device.type)
