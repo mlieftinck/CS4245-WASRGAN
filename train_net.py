@@ -247,7 +247,7 @@ def build_model(
     if device == "mps":
         backend = "aot_eager"
 
-    print("backend", backend, device.type)
+    print("backend", backend, device)
 
     if config["MODEL"]["G"]["COMPILED"]:
         g_model = torch.compile(g_model, backend=backend)
