@@ -6,7 +6,7 @@ SCALE: 2
 # run device model
 DEVICE_ID: 0
 # Model weights path
-MODEL_WEIGHTS_PATH: "/kaggle/input/new-weights/SRGAN_x2-SRGAN_Flickr2K/epoch_6.pth.tar"
+MODEL_WEIGHTS_PATH: "/kaggle/input/new-weights/SRGAN_x2-SRGAN_Flickr2K/epoch_5.pth.tar"
 
 # Model define
 MODEL:
