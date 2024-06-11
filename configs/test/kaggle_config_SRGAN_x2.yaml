@@ -16,7 +16,7 @@ MODEL:
     OUT_CHANNELS: 3
     CHANNELS: 64
     NUM_RCB: 16
-    COMPILED: False
+    COMPILED: True
 
 TEST:
   DATASET:
