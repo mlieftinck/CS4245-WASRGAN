@@ -58,23 +58,81 @@ class BaseImageDataset(Dataset):
         # Read a batch of low-resolution images
         if lr_images_dir is None:
             image_file_names = natsorted(os.listdir(gt_images_dir))
+            valid_extensions = ('.png', '.jpg', '.jpeg')
+            image_file_names = [file for file in image_file_names if file.lower().endswith(valid_extensions)]
             self.lr_image_file_names = None
             self.gt_image_file_names = [os.path.join(gt_images_dir, image_file_name) for image_file_name in image_file_names]
         else:
             if os.listdir(lr_images_dir) == 0:
                 raise RuntimeError("LR image folder is empty.")
-            image_file_names = natsorted(os.listdir(lr_images_dir))
+            
+            image_file_names = natsorted(os.listdir(gt_images_dir))
+            valid_extensions = ('.png', '.jpg', '.jpeg')
+            image_file_names = [file for file in image_file_names if file.lower().endswith(valid_extensions)]
             self.lr_image_file_names = [os.path.join(lr_images_dir, image_file_name) for image_file_name in image_file_names]
             self.gt_image_file_names = [os.path.join(gt_images_dir, image_file_name) for image_file_name in image_file_names]
 
+            print('len lr image names:', len(self.lr_image_file_names))
+            print('len gt image names:', len(self.gt_image_file_names))
+            
+            n1 = self.check_files_exists(self.lr_image_file_names)
+            n2 = self.check_files_exists(self.gt_image_file_names)
+
+            if n1 + n2 > 0:
+                raise RuntimeError("Names images does not match")
+
         self.upscale_factor = upscale_factor
+
+    def check_files_exists(self, file_names):
+        non_existent_files = []
+        for file_name in file_names:
+            if not os.path.exists(file_name):
+                non_existent_files.append(file_name)
+        print('non existent:', non_existent_files)
+        return len(non_existent_files)
+
+    def print_differences(self, list1, list2):
+        differences = 0
+        max_length = max(len(list1), len(list2))
+        
+        for i in range(max_length):
+            if i >= len(list1):
+                print(f"Index {i}: {None} != {list2[i]}")
+                differences += 1
+            elif i >= len(list2):
+                print(f"Index {i}: {list1[i]} != {None}")
+                differences += 1
+            elif list1[i] != list2[i]:
+                print(f"Index {i}: {list1[i]} != {list2[i]}")
+                differences += 1
+
+        print('number of differences', differences)
+        return differences
+    
+    # ./data/Flickr2k_LRWRGT/dataset_GT_patches/000446_0007.png
+    # ./data/Flickr2k_LRWRGT/dataset_LRW_patches/000446_0007.png
 
     def __getitem__(
             self,
             batch_index: int
     ) -> [Tensor, Tensor]:
         # Read a batch of ground truth images
-        gt_image = cv2.imread(self.gt_image_file_names[batch_index]).astype(np.float32) / 255.
+
+
+
+
+        gt_image = cv2.imread(self.gt_image_file_names[batch_index])
+
+        if gt_image is None or (isinstance(gt_image, np.ndarray) and not gt_image.any()):   
+            print('gt_timage ', batch_index, len(self.gt_image_file_names))
+            print('file name', self.gt_image_file_names[batch_index])
+            if gt_image is None:
+                print('gt image is None')
+            print(gt_image)
+            gt_image = cv2.imread(self.gt_image_file_names[0])
+            
+            
+        gt_image = gt_image.astype(np.float32) / 255.
         gt_image = cv2.cvtColor(gt_image, cv2.COLOR_BGR2RGB)
         gt_tensor = image_to_tensor(gt_image, False, False)
 
@@ -117,8 +175,12 @@ class PairedImageDataset(Dataset):
 
         # Get a list of all image filenames
         image_files = natsorted(os.listdir(paired_lr_images_dir))
-        self.paired_gt_image_file_names = [os.path.join(paired_gt_images_dir, x) for x in image_files]
-        self.paired_lr_image_file_names = [os.path.join(paired_lr_images_dir, x) for x in image_files]
+        valid_extensions = ('.png', '.jpg', '.jpeg')
+
+        
+
+        self.paired_gt_image_file_names = [os.path.join(paired_gt_images_dir, x) for x in image_files if x.lower().endswith(valid_extensions)]
+        self.paired_lr_image_file_names = [os.path.join(paired_lr_images_dir, x) for x in image_files if x.lower().endswith(valid_extensions)]
 
     def __getitem__(self, batch_index: int) -> [Tensor, Tensor, str]:
         # Read a batch of image data

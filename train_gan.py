@@ -531,6 +531,7 @@ def train(
             writer.add_scalar("Train/D(SR)_Probability", torch.sigmoid_(torch.mean(sr_output.detach())).item(), iters)
             progress.display(batch_index)
 
+
         # Preload the next batch of data
         batch_data = train_data_prefetcher.next()
 

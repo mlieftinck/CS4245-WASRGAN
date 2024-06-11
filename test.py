@@ -76,7 +76,7 @@ def test(
 
     if config["TEST"]["SAVE_IMAGE_DIR"]:
         save_image = True
-        save_image_dir = os.path.join(config["TEST"]["SAVE_IMAGE_DIR"], config["EXP_NAME"] + "_" + datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+        save_image_dir = os.path.join(config["TEST"]["SAVE_IMAGE_DIR"], confige["EXP_NAME"] + "_" + datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
         make_directory(save_image_dir)
 
     # Calculate the number of iterations per epoch
