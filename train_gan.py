@@ -294,14 +294,14 @@ def load_dataset(
                                               pin_memory=config["TRAIN"]["HYP"]["PIN_MEMORY"],
                                               drop_last=True,
                                               persistent_workers=config["TRAIN"]["HYP"]["PERSISTENT_WORKERS"])
-    paired_test_dataloader = DataLoader(paired_test_datasets_1,
+    paired_test_dataloader_1 = DataLoader(paired_test_datasets_1,
                                         batch_size=config["TEST"]["HYP"]["IMGS_PER_BATCH"],
                                         shuffle=config["TEST"]["HYP"]["SHUFFLE"],
                                         num_workers=config["TEST"]["HYP"]["NUM_WORKERS"],
                                         pin_memory=config["TEST"]["HYP"]["PIN_MEMORY"],
                                         drop_last=False,
                                         persistent_workers=config["TEST"]["HYP"]["PERSISTENT_WORKERS"])
-    paired_test_dataloader = DataLoader(paired_test_datasets_2,
+    paired_test_dataloader_2 = DataLoader(paired_test_datasets_2,
                                         batch_size=config["TEST"]["HYP"]["IMGS_PER_BATCH"],
                                         shuffle=config["TEST"]["HYP"]["SHUFFLE"],
                                         num_workers=config["TEST"]["HYP"]["NUM_WORKERS"],
@@ -311,8 +311,8 @@ def load_dataset(
 
     # Replace the data set iterator with CUDA to speed up
     train_data_prefetcher = CPUPrefetcher(degenerated_train_dataloader)
-    paired_test_data_prefetcher_1 = CPUPrefetcher(paired_test_dataloader)
-    paired_test_data_prefetcher_2 = CPUPrefetcher(paired_test_dataloader)
+    paired_test_data_prefetcher_1 = CPUPrefetcher(paired_test_dataloader_1)
+    paired_test_data_prefetcher_2 = CPUPrefetcher(paired_test_dataloader_2)
 
     return train_data_prefetcher, paired_test_data_prefetcher_1, paired_test_data_prefetcher_2 
 
