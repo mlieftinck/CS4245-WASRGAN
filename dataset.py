@@ -156,7 +156,31 @@ class BaseImageDataset(Dataset):
 
         # Read a batch of low-resolution images
         if self.lr_image_file_names is not None:
-            lr_image = cv2.imread(self.lr_image_file_names[batch_index]).astype(np.float32) / 255.
+            lr_image = cv2.imread(self.lr_image_file_names[batch_index])
+
+            if lr_image is None or (isinstance(lr_image, np.ndarray) and not lr_image.any()):
+                print('lr', batch_index, len(self.lr_image_file_names))
+                print('file name', self.lr_image_file_names[batch_index])
+                path = Path(self.lr_image_file_names[batch_index])
+                print('path exists', path.exists())
+
+                # Check if the file is readable
+                if not os.access(self.lr_image_file_names[batch_index], os.R_OK):
+                    print("File is not readable")
+                
+                # Check for unsupported file formats
+                if path.suffix.lower() not in ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']:
+                    print(f"Unsupported file format: {path.suffix}")
+
+                # Check if the file is corrupted or OpenCV is not functioning correctly
+                if lr_image is None:
+                    print('lr_image is None', self.skipped_images)
+                    # Fallback to the first image
+                    lr_image = cv2.imread(self.lr_image_file_names[0])
+                    self.skipped_images += 1
+            
+            
+            lr_image = lr_image.astype(np.float32) / 255.
             lr_image = cv2.cvtColor(lr_image, cv2.COLOR_BGR2RGB)
             lr_tensor = image_to_tensor(lr_image, False, False)
         else:

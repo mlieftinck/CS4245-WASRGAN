@@ -31,7 +31,7 @@ from torch.utils.tensorboard import SummaryWriter
 import model
 from dataset import CUDAPrefetcher, BaseImageDataset, PairedImageDataset, CPUPrefetcher
 from imgproc import random_crop_torch, random_rotate_torch, random_vertically_flip_torch, random_horizontally_flip_torch
-from test import test
+from test_double import test
 from utils import build_iqa_model, load_resume_state_dict, load_pretrained_state_dict, make_directory, save_checkpoint, \
     Summary, AverageMeter, ProgressMeter
 
@@ -84,7 +84,7 @@ def main():
 
 
     # Define the basic functions needed to start training
-    train_data_prefetcher, paired_test_data_prefetcher = load_dataset(config, device)
+    train_data_prefetcher, paired_test_data_prefetcher_1, paired_test_data_prefetcher_2 = load_dataset(config, device)
     g_model, ema_g_model, d_model = build_model(config, device)
     pixel_criterion, content_criterion, adversarial_criterion = define_loss(config, device)
     g_optimizer, d_optimizer = define_optimizer(g_model, d_model, config)
@@ -160,6 +160,34 @@ def main():
     # create model training log
     writer = SummaryWriter(os.path.join("samples", "logs", config["EXP_NAME"]))
 
+
+    # # test once before training starts
+
+    # psnr, ssim = test('whatsapp', g_model,
+    #                     paired_test_data_prefetcher_1,
+    #                     psnr_model,
+    #                     ssim_model,
+    #                     device,
+    #                     config)
+    # print("\n")
+
+    # # Write the evaluation indicators of each round of Epoch to the log
+    # writer.add_scalar(f"whatsapp Test/PSNR", psnr, -1)
+    # writer.add_scalar(f"whatsapp Test/SSIM", ssim, -1)
+
+    # psnr, ssim = test('downsampled', g_model,
+    #                     paired_test_data_prefetcher_2,
+    #                     psnr_model,
+    #                     ssim_model,
+    #                     device,
+    #                     config)
+    # print("\n")
+
+    # # Write the evaluation indicators of each round of Epoch to the log
+    # writer.add_scalar(f"downsampled Test/PSNR", psnr, -1)
+    # writer.add_scalar(f"downsampled Test/SSIM", ssim, -1)
+
+
     for epoch in range(start_epoch, config["TRAIN"]["HYP"]["EPOCHS"]):
         train(g_model,
               ema_g_model,
@@ -180,8 +208,24 @@ def main():
         g_scheduler.step()
         d_scheduler.step()
 
-        psnr, ssim = test(g_model,
-                          paired_test_data_prefetcher,
+        print('whatsapp')
+        
+
+        psnr, ssim = test('whatsapp', g_model,
+                          paired_test_data_prefetcher_1,
+                          psnr_model,
+                          ssim_model,
+                          device,
+                          config)
+        print("\n")
+        print('downsampled')
+
+        # Write the evaluation indicators of each round of Epoch to the log
+        writer.add_scalar(f"whatsapp Test/PSNR", psnr, epoch + 1)
+        writer.add_scalar(f"whatsapp Test/SSIM", ssim, epoch + 1)
+
+        psnr, ssim = test('downsampled', g_model,
+                          paired_test_data_prefetcher_2,
                           psnr_model,
                           ssim_model,
                           device,
@@ -189,8 +233,8 @@ def main():
         print("\n")
 
         # Write the evaluation indicators of each round of Epoch to the log
-        writer.add_scalar(f"Test/PSNR", psnr, epoch + 1)
-        writer.add_scalar(f"Test/SSIM", ssim, epoch + 1)
+        writer.add_scalar(f"downsampled Test/PSNR", psnr, epoch + 1)
+        writer.add_scalar(f"downsampled Test/SSIM", ssim, epoch + 1)
 
         # Automatically save model weights
         is_best = psnr > best_psnr and ssim > best_ssim
@@ -236,8 +280,11 @@ def load_dataset(
     )
 
     # Load the registration test dataset
-    paired_test_datasets = PairedImageDataset(config["TEST"]["DATASET"]["PAIRED_TEST_GT_IMAGES_DIR"],
-                                              config["TEST"]["DATASET"]["PAIRED_TEST_LR_IMAGES_DIR"])
+    paired_test_datasets_1 = PairedImageDataset(config["TEST"]["DATASET"]["PAIRED_TEST_GT_IMAGES_DIR_1"],
+                                              config["TEST"]["DATASET"]["PAIRED_TEST_LR_IMAGES_DIR_2"])
+    
+    paired_test_datasets_2 = PairedImageDataset(config["TEST"]["DATASET"]["PAIRED_TEST_GT_IMAGES_DIR_1"],
+                                              config["TEST"]["DATASET"]["PAIRED_TEST_LR_IMAGES_DIR_2"])
 
     # generate dataset iterator
     degenerated_train_dataloader = DataLoader(degenerated_train_datasets,
@@ -247,7 +294,14 @@ def load_dataset(
                                               pin_memory=config["TRAIN"]["HYP"]["PIN_MEMORY"],
                                               drop_last=True,
                                               persistent_workers=config["TRAIN"]["HYP"]["PERSISTENT_WORKERS"])
-    paired_test_dataloader = DataLoader(paired_test_datasets,
+    paired_test_dataloader = DataLoader(paired_test_datasets_1,
+                                        batch_size=config["TEST"]["HYP"]["IMGS_PER_BATCH"],
+                                        shuffle=config["TEST"]["HYP"]["SHUFFLE"],
+                                        num_workers=config["TEST"]["HYP"]["NUM_WORKERS"],
+                                        pin_memory=config["TEST"]["HYP"]["PIN_MEMORY"],
+                                        drop_last=False,
+                                        persistent_workers=config["TEST"]["HYP"]["PERSISTENT_WORKERS"])
+    paired_test_dataloader = DataLoader(paired_test_datasets_2,
                                         batch_size=config["TEST"]["HYP"]["IMGS_PER_BATCH"],
                                         shuffle=config["TEST"]["HYP"]["SHUFFLE"],
                                         num_workers=config["TEST"]["HYP"]["NUM_WORKERS"],
@@ -257,9 +311,10 @@ def load_dataset(
 
     # Replace the data set iterator with CUDA to speed up
     train_data_prefetcher = CPUPrefetcher(degenerated_train_dataloader)
-    paired_test_data_prefetcher = CPUPrefetcher(paired_test_dataloader)
+    paired_test_data_prefetcher_1 = CPUPrefetcher(paired_test_dataloader)
+    paired_test_data_prefetcher_2 = CPUPrefetcher(paired_test_dataloader)
 
-    return train_data_prefetcher, paired_test_data_prefetcher
+    return train_data_prefetcher, paired_test_data_prefetcher_1, paired_test_data_prefetcher_2 
 
 
 def build_model(
