@@ -197,13 +197,13 @@ class PairedImageDataset(Dataset):
             raise FileNotFoundError(f"Registered high-resolution image address does not exist: {paired_gt_images_dir}")
 
         # Get a list of all image filenames
-        image_files = natsorted(os.listdir(paired_lr_images_dir))
+        image_files_gt = natsorted(os.listdir(paired_gt_images_dir))
+        image_files_lr = natsorted(os.listdir(paired_lr_images_dir))
+
         valid_extensions = ('.png', '.jpg', '.jpeg')
 
-        
-
-        self.paired_gt_image_file_names = [os.path.join(paired_gt_images_dir, x) for x in image_files if x.lower().endswith(valid_extensions)]
-        self.paired_lr_image_file_names = [os.path.join(paired_lr_images_dir, x) for x in image_files if x.lower().endswith(valid_extensions)]
+        self.paired_gt_image_file_names = [os.path.join(paired_gt_images_dir, x) for x in image_files_gt if x.lower().endswith(valid_extensions)]
+        self.paired_lr_image_file_names = [os.path.join(paired_lr_images_dir, x) for x in image_files_lr if x.lower().endswith(valid_extensions)]
 
     def __getitem__(self, batch_index: int) -> [Tensor, Tensor, str]:
         # Read a batch of image data
