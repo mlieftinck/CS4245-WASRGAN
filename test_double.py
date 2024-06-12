@@ -154,7 +154,7 @@ def test(name_test: str,
             # Save the processed image after super-resolution
             if batch_data["image_name"] == "":
                 raise ValueError("The image_name is None, please check the dataset.")
-            if save_image:
+            if save_image and batch_index in [0, 1,2,3,4]:
                 image_name = os.path.basename(batch_data["image_name"][0])
                 sr_image = tensor_to_image(sr, False, False)
                 sr_image = cv2.cvtColor(sr_image, cv2.COLOR_RGB2BGR)
