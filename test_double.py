@@ -142,6 +142,8 @@ def test(name_test: str,
             # record current metrics
             psnres.update(psnr.item(), sr.size(0))
             ssimes.update(ssim.item(), ssim.size(0))
+            psnres_sd.update(psnr.item(), sr.size(0))
+            ssimes_sd.update(ssim.item(), ssim.size(0))
 
             # Record the total time to verify a batch
             batch_time.update(time.time() - end)
