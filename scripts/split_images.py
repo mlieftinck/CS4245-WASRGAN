@@ -22,12 +22,12 @@ from tqdm import tqdm
 
 def main():
     args = {
-        # "inputs_dir": "./data/Flickr2k_LRWRGT/dataset_GT",  # Path to input image directory.
-        # "output_dir": "./data/Flickr2k_LRWRGT/dataset_GT_patches",  # Path to generator image directory.
-        "inputs_dir": "./data/Flickr2k_LRWRGT/dataset_LRW",  # Path to input image directory.
-        "output_dir": "./data/Flickr2k_LRWRGT/dataset_LRW_patches",  # Path to generator image directory.
-        "crop_size": 128,  # Crop image size from raw image.
-        "step": 64,  # Step size of sliding window.
+        "inputs_dir": "./data/Flickr2k_LRWRGT/dataset_GT",  # Path to input image directory.
+        "output_dir": "./data/Flickr2k_LRWRGT/dataset_GT_patches",  # Path to generator image directory.
+        # "inputs_dir": "./data/Flickr2k_LRWRGT/dataset_LRW",  # Path to input image directory.
+        # "output_dir": "./data/Flickr2k_LRWRGT/dataset_LRW_patches",  # Path to generator image directory.
+        "crop_size": 256,  # Crop image size from raw image.
+        "step": 128,  # Step size of sliding window.
         "thresh_size": 0,  # Threshold size. If the remaining image is less than the threshold, it will not be cropped.
         "num_workers": 10  # How many threads to open at the same time.
     }
@@ -67,6 +67,8 @@ def split_images(args: dict):
 
     # Get all image paths
     image_file_paths = os.listdir(inputs_dir)
+
+    print(image_file_paths)
     
 
     # Splitting images with multiple threads

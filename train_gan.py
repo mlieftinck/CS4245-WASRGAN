@@ -203,7 +203,7 @@ def main():
                          "state_dict": g_model.state_dict(),
                          "ema_state_dict": ema_g_model.state_dict() if ema_g_model is not None else None,
                          "optimizer": g_optimizer.state_dict()},
-                        f"epoch_{epoch + 1}.pth.tar",
+                        f"epoch_{epoch + 1}_g.pth.tar",
                         samples_dir,
                         results_dir,
                         "g_best.pth.tar",
@@ -215,7 +215,7 @@ def main():
                          "ssim": ssim,
                          "state_dict": d_model.state_dict(),
                          "optimizer": d_optimizer.state_dict()},
-                        f"epoch_{epoch + 1}.pth.tar",
+                        f"epoch_{epoch + 1}_d.pth.tar",
                         samples_dir,
                         results_dir,
                         "d_best.pth.tar",
@@ -537,6 +537,8 @@ def train(
 
         # After training a batch of data, add 1 to the number of data batches to ensure that the terminal prints data normally
         batch_index += 1
+
+       
 
 
 if __name__ == "__main__":

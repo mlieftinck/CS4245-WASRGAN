@@ -21,6 +21,7 @@ import torch
 from natsort import natsorted
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
+from pathlib import Path
 
 from imgproc import image_to_tensor, image_resize
 
@@ -46,6 +47,8 @@ class BaseImageDataset(Dataset):
             lr_images_dir (str, optional): Low resolution image address. Default: ``None``
             upscale_factor (int, optional): Image up scale factor. Default: 4
         """
+
+        self.skipped_images = 0
 
         super(BaseImageDataset, self).__init__()
         # check if the ground truth images folder is empty
@@ -120,16 +123,31 @@ class BaseImageDataset(Dataset):
 
 
 
-
         gt_image = cv2.imread(self.gt_image_file_names[batch_index])
+        # gt_image = cv2.imread('./data/Flickr2k_LRWRGT/dataset_GT_patches/000001_0001.png') 
+        # gt_image = cv2.imread('./data/Flickr2k_LRWRGT/dataset_GT_patches/000223_0125.png')
 
-        if gt_image is None or (isinstance(gt_image, np.ndarray) and not gt_image.any()):   
-            print('gt_timage ', batch_index, len(self.gt_image_file_names))
+        if gt_image is None or (isinstance(gt_image, np.ndarray) and not gt_image.any()):
+            print('gt_image', batch_index, len(self.gt_image_file_names))
             print('file name', self.gt_image_file_names[batch_index])
+            path = Path(self.gt_image_file_names[batch_index])
+            print('path exists', path.exists())
+
+            # Check if the file is readable
+            if not os.access(self.gt_image_file_names[batch_index], os.R_OK):
+                print("File is not readable")
+            
+            # Check for unsupported file format
+            if path.suffix.lower() not in ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']:
+                print(f"Unsupported file format: {path.suffix}")
+
+            # Check if the file is corrupted or OpenCV is not functioning correctly
             if gt_image is None:
-                print('gt image is None')
-            print(gt_image)
-            gt_image = cv2.imread(self.gt_image_file_names[0])
+                print('gt_image is None', self.skipped_images)
+                # Fallback to the first image
+                gt_image = cv2.imread(self.gt_image_file_names[0])
+                self.skipped_images += 1
+
             
             
         gt_image = gt_image.astype(np.float32) / 255.
@@ -150,6 +168,11 @@ class BaseImageDataset(Dataset):
 
     def __len__(self) -> int:
         return len(self.gt_image_file_names)
+    
+    def get_skipped(self):
+        return self.skipped_images
+    
+
 
 
 class PairedImageDataset(Dataset):

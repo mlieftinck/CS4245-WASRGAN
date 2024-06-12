@@ -100,4 +100,4 @@ TEST:
   # Only test Y channel
   ONLY_TEST_Y_CHANNEL: True
 
-  SAVE_IMAGE_DIR: ""
+  SAVE_IMAGE_DIR: "./results/images"
