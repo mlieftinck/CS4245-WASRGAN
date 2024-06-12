@@ -281,9 +281,9 @@ def load_dataset(
 
     # Load the registration test dataset
     paired_test_datasets_1 = PairedImageDataset(config["TEST"]["DATASET"]["PAIRED_TEST_GT_IMAGES_DIR_1"],
-                                              config["TEST"]["DATASET"]["PAIRED_TEST_LR_IMAGES_DIR_2"])
+                                              config["TEST"]["DATASET"]["PAIRED_TEST_LR_IMAGES_DIR_1"])
     
-    paired_test_datasets_2 = PairedImageDataset(config["TEST"]["DATASET"]["PAIRED_TEST_GT_IMAGES_DIR_1"],
+    paired_test_datasets_2 = PairedImageDataset(config["TEST"]["DATASET"]["PAIRED_TEST_GT_IMAGES_DIR_2"],
                                               config["TEST"]["DATASET"]["PAIRED_TEST_LR_IMAGES_DIR_2"])
 
     # generate dataset iterator
