@@ -20,8 +20,8 @@ MODEL:
 
 TEST:
   DATASET:
-    PAIRED_TEST_GT_IMAGES_DIR: "./data/Flickr2k_LRWRGT/testset_GT_patches"
-    PAIRED_TEST_LR_IMAGES_DIR: "./data/Flickr2k_LRWRGT/testset_LRW_patches"
+    PAIRED_TEST_GT_IMAGES_DIR: "/kaggle/input/train-set/dataset_GT_patches/dataset_GT_patches/"
+    PAIRED_TEST_LR_IMAGES_DIR: "/kaggle/input/train-set/dataset_LRW_patches/dataset_LRW_patches/"
 
   # Test hyperparameters
   HYP:
