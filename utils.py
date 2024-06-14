@@ -16,6 +16,7 @@ import shutil
 from collections import OrderedDict
 from enum import Enum
 from typing import Any
+import math
 
 import torch
 import math
@@ -244,7 +245,10 @@ class AverageMeter(object):
             self.sd = 0
 
     def __str__(self):
-        fmtstr = "{name} {val" + self.fmt + "} ({avg" + self.fmt + "})"
+        if self.summary_type is Summary.SD:
+            fmtstr = "{name} {val" + self.fmt + "} ({sd" + self.fmt + "})"
+        else:
+            fmtstr = "{name} {val" + self.fmt + "} ({avg" + self.fmt + "})"
         return fmtstr.format(**self.__dict__)
 
     def summary(self):

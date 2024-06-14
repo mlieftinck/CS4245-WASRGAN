@@ -21,6 +21,7 @@ import torch
 from natsort import natsorted
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
+from pathlib import Path
 
 from imgproc import image_to_tensor, image_resize
 
@@ -47,6 +48,8 @@ class BaseImageDataset(Dataset):
             upscale_factor (int, optional): Image up scale factor. Default: 4
         """
 
+        self.skipped_images = 0
+
         super(BaseImageDataset, self).__init__()
         # check if the ground truth images folder is empty
         if os.listdir(gt_images_dir) == 0:
@@ -58,52 +61,142 @@ class BaseImageDataset(Dataset):
         # Read a batch of low-resolution images
         if lr_images_dir is None:
             image_file_names = natsorted(os.listdir(gt_images_dir))
+            valid_extensions = ('.png', '.jpg', '.jpeg')
+            image_file_names = [file for file in image_file_names if file.lower().endswith(valid_extensions)]
             self.lr_image_file_names = None
             self.gt_image_file_names = [os.path.join(gt_images_dir, image_file_name) for image_file_name in image_file_names]
         else:
             if os.listdir(lr_images_dir) == 0:
                 raise RuntimeError("LR image folder is empty.")
-            image_file_names_lr = natsorted(os.listdir(lr_images_dir))
-            image_file_names_gt = natsorted(os.listdir(gt_images_dir))
-            self.lr_image_file_names = [os.path.join(lr_images_dir, image_file_name) for image_file_name in image_file_names_lr]
-            self.gt_image_file_names = [os.path.join(gt_images_dir, image_file_name) for image_file_name in image_file_names_gt[:len(self.lr_image_file_names)]]
+            
+            image_file_names = natsorted(os.listdir(gt_images_dir))
+            valid_extensions = ('.png', '.jpg', '.jpeg')
+            image_file_names = [file for file in image_file_names if file.lower().endswith(valid_extensions)]
+            self.lr_image_file_names = [os.path.join(lr_images_dir, image_file_name) for image_file_name in image_file_names]
+            self.gt_image_file_names = [os.path.join(gt_images_dir, image_file_name) for image_file_name in image_file_names]
+
+            print('len lr image names:', len(self.lr_image_file_names))
+            print('len gt image names:', len(self.gt_image_file_names))
+            
+            n1 = self.check_files_exists(self.lr_image_file_names)
+            n2 = self.check_files_exists(self.gt_image_file_names)
+
+            if n1 + n2 > 0:
+                raise RuntimeError("Names images does not match")
 
         self.upscale_factor = upscale_factor
+
+    def check_files_exists(self, file_names):
+        non_existent_files = []
+        for file_name in file_names:
+            if not os.path.exists(file_name):
+                non_existent_files.append(file_name)
+        print('non existent:', non_existent_files)
+        return len(non_existent_files)
+
+    def print_differences(self, list1, list2):
+        differences = 0
+        max_length = max(len(list1), len(list2))
+        
+        for i in range(max_length):
+            if i >= len(list1):
+                print(f"Index {i}: {None} != {list2[i]}")
+                differences += 1
+            elif i >= len(list2):
+                print(f"Index {i}: {list1[i]} != {None}")
+                differences += 1
+            elif list1[i] != list2[i]:
+                print(f"Index {i}: {list1[i]} != {list2[i]}")
+                differences += 1
+
+        print('number of differences', differences)
+        return differences
+    
+    # ./data/Flickr2k_LRWRGT/dataset_GT_patches/000446_0007.png
+    # ./data/Flickr2k_LRWRGT/dataset_LRW_patches/000446_0007.png
 
     def __getitem__(
             self,
             batch_index: int
     ) -> [Tensor, Tensor]:
         # Read a batch of ground truth images
-        # if batch_index == 1:
-        #     print("Here you should see the first 3 gt image paths:")
-        #     print(self.gt_image_file_names[:3])
 
-        gt_image = cv2.imread(self.gt_image_file_names[batch_index]).astype(np.float32) / 255.
+
+
+        gt_image = cv2.imread(self.gt_image_file_names[batch_index])
+        # gt_image = cv2.imread('./data/Flickr2k_LRWRGT/dataset_GT_patches/000001_0001.png') 
+        # gt_image = cv2.imread('./data/Flickr2k_LRWRGT/dataset_GT_patches/000223_0125.png')
+
+        if gt_image is None or (isinstance(gt_image, np.ndarray) and not gt_image.any()):
+            print('gt_image', batch_index, len(self.gt_image_file_names))
+            print('file name', self.gt_image_file_names[batch_index])
+            path = Path(self.gt_image_file_names[batch_index])
+            print('path exists', path.exists())
+
+            # Check if the file is readable
+            if not os.access(self.gt_image_file_names[batch_index], os.R_OK):
+                print("File is not readable")
+            
+            # Check for unsupported file format
+            if path.suffix.lower() not in ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']:
+                print(f"Unsupported file format: {path.suffix}")
+
+            # Check if the file is corrupted or OpenCV is not functioning correctly
+            if gt_image is None:
+                print('gt_image is None', self.skipped_images)
+                # Fallback to the first image
+                gt_image = cv2.imread(self.gt_image_file_names[0])
+                self.skipped_images += 1
+
+            
+            
+        gt_image = gt_image.astype(np.float32) / 255.
         gt_image = cv2.cvtColor(gt_image, cv2.COLOR_BGR2RGB)
         gt_tensor = image_to_tensor(gt_image, False, False)
 
         # Read a batch of low-resolution images
-        # if batch_index == 1:
-        #     print("Here you should see the first 3 lr image paths:")
-        #     print(self.lr_image_file_names[:3])
         if self.lr_image_file_names is not None:
-            # print(batch_index)
-            lr_image = cv2.imread(self.lr_image_file_names[batch_index]).astype(np.float32) / 255.
+            lr_image = cv2.imread(self.lr_image_file_names[batch_index])
+
+            if lr_image is None or (isinstance(lr_image, np.ndarray) and not lr_image.any()):
+                print('lr', batch_index, len(self.lr_image_file_names))
+                print('file name', self.lr_image_file_names[batch_index])
+                path = Path(self.lr_image_file_names[batch_index])
+                print('path exists', path.exists())
+
+                # Check if the file is readable
+                if not os.access(self.lr_image_file_names[batch_index], os.R_OK):
+                    print("File is not readable")
+                
+                # Check for unsupported file formats
+                if path.suffix.lower() not in ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']:
+                    print(f"Unsupported file format: {path.suffix}")
+
+                # Check if the file is corrupted or OpenCV is not functioning correctly
+                if lr_image is None:
+                    print('lr_image is None', self.skipped_images)
+                    # Fallback to the first image
+                    lr_image = cv2.imread(self.lr_image_file_names[0])
+                    self.skipped_images += 1
+            
+            
+            lr_image = lr_image.astype(np.float32) / 255.
             lr_image = cv2.cvtColor(lr_image, cv2.COLOR_BGR2RGB)
             lr_tensor = image_to_tensor(lr_image, False, False)
         else:
             lr_tensor = image_resize(gt_tensor, 1 / self.upscale_factor)
             print("resizing GT")
 
-        if batch_index == 1:
-            print(f"First gt_tensor: {gt_tensor.size()}")
-            print(f"First lr_tensor: {lr_tensor.size()}")
         return {"gt": gt_tensor,
                 "lr": lr_tensor}
 
     def __len__(self) -> int:
         return len(self.gt_image_file_names)
+    
+    def get_skipped(self):
+        return self.skipped_images
+    
+
 
 
 class PairedImageDataset(Dataset):
@@ -128,15 +221,17 @@ class PairedImageDataset(Dataset):
             raise FileNotFoundError(f"Registered high-resolution image address does not exist: {paired_gt_images_dir}")
 
         # Get a list of all image filenames
-        image_files_lr = natsorted(os.listdir(paired_lr_images_dir))
         image_files_gt = natsorted(os.listdir(paired_gt_images_dir))
-        self.paired_gt_image_file_names = [os.path.join(paired_gt_images_dir, x) for x in image_files_gt]
-        self.paired_lr_image_file_names = [os.path.join(paired_lr_images_dir, x) for x in image_files_lr]
+        image_files_lr = natsorted(os.listdir(paired_lr_images_dir))
+
+        valid_extensions = ('.png', '.jpg', '.jpeg')
+
+        self.paired_gt_image_file_names = [os.path.join(paired_gt_images_dir, x) for x in image_files_gt if x.lower().endswith(valid_extensions)]
+        self.paired_lr_image_file_names = [os.path.join(paired_lr_images_dir, x) for x in image_files_lr if x.lower().endswith(valid_extensions)]
 
     def __getitem__(self, batch_index: int) -> [Tensor, Tensor, str]:
         # Read a batch of image data
         gt_image = cv2.imread(self.paired_gt_image_file_names[batch_index]).astype(np.float32) / 255.
-
         lr_image = cv2.imread(self.paired_lr_image_file_names[batch_index]).astype(np.float32) / 255.
 
         # BGR convert RGB

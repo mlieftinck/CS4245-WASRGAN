@@ -29,9 +29,9 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 import model
-from dataset import CUDAPrefetcher, BaseImageDataset, PairedImageDataset
+from dataset import CUDAPrefetcher, BaseImageDataset, PairedImageDataset, CPUPrefetcher
 from imgproc import random_crop_torch, random_rotate_torch, random_vertically_flip_torch, random_horizontally_flip_torch
-from test import test
+from test_double import test
 from utils import build_iqa_model, load_resume_state_dict, load_pretrained_state_dict, make_directory, save_checkpoint, \
     Summary, AverageMeter, ProgressMeter
 
@@ -43,7 +43,22 @@ def main():
                         type=str,
                         default="./configs/train/SRGAN_x4-SRGAN_ImageNet-Set5.yaml",
                         help="Path to train config file.")
+    parser.add_argument("--device",
+                type=str,
+                default="cpu",
+                required=False,
+                help="device (cpu/cuda/mps)")
     args = parser.parse_args()
+
+    device = None
+    if args.device == "mps" and torch.backends.mps.is_available():
+        device = torch.device("mps")
+    elif device == "cuda":
+        device = torch.device("cuda", config["DEVICE_ID"])
+    else:
+        device = torch.device("cpu")
+    
+    print("device:", device)
 
     with open(args.config_path, "r") as f:
         config = yaml.full_load(f)
@@ -67,11 +82,9 @@ def main():
     best_psnr = 0.0
     best_ssim = 0.0
 
-    # Define the running device number
-    device = torch.device("cuda", config["DEVICE_ID"])
 
     # Define the basic functions needed to start training
-    train_data_prefetcher, paired_test_data_prefetcher = load_dataset(config, device)
+    train_data_prefetcher, paired_test_data_prefetcher_1, paired_test_data_prefetcher_2 = load_dataset(config, device)
     g_model, ema_g_model, d_model = build_model(config, device)
     pixel_criterion, content_criterion, adversarial_criterion = define_loss(config, device)
     g_optimizer, d_optimizer = define_optimizer(g_model, d_model, config)
@@ -119,6 +132,18 @@ def main():
     else:
         print("Resume training d model not found. Start training from scratch.")
 
+
+    # compile model
+    backend = "inductor"
+    if device == "mps":
+        backend = "aot_eager"
+
+    backend = "aot_eager" # temp
+
+    print('backend set to', backend, ', device to', device)
+    g_model = torch.compile(g_model, backend=backend)
+    d_model = torch.compile(d_model, backend=backend)
+
     # Initialize the image clarity evaluation method
     psnr_model, ssim_model = build_iqa_model(
         config["SCALE"],
@@ -134,6 +159,34 @@ def main():
 
     # create model training log
     writer = SummaryWriter(os.path.join("samples", "logs", config["EXP_NAME"]))
+
+
+    # # test once before training starts
+
+    # psnr, ssim = test('whatsapp', g_model,
+    #                     paired_test_data_prefetcher_1,
+    #                     psnr_model,
+    #                     ssim_model,
+    #                     device,
+    #                     config)
+    # print("\n")
+
+    # # Write the evaluation indicators of each round of Epoch to the log
+    # writer.add_scalar(f"whatsapp Test/PSNR", psnr, -1)
+    # writer.add_scalar(f"whatsapp Test/SSIM", ssim, -1)
+
+    # psnr, ssim = test('downsampled', g_model,
+    #                     paired_test_data_prefetcher_2,
+    #                     psnr_model,
+    #                     ssim_model,
+    #                     device,
+    #                     config)
+    # print("\n")
+
+    # # Write the evaluation indicators of each round of Epoch to the log
+    # writer.add_scalar(f"downsampled Test/PSNR", psnr, -1)
+    # writer.add_scalar(f"downsampled Test/SSIM", ssim, -1)
+
 
     for epoch in range(start_epoch, config["TRAIN"]["HYP"]["EPOCHS"]):
         train(g_model,
@@ -155,8 +208,24 @@ def main():
         g_scheduler.step()
         d_scheduler.step()
 
-        psnr, ssim = test(g_model,
-                          paired_test_data_prefetcher,
+        print('whatsapp')
+        
+
+        psnr, ssim = test('whatsapp', g_model,
+                          paired_test_data_prefetcher_1,
+                          psnr_model,
+                          ssim_model,
+                          device,
+                          config)
+        print("\n")
+        print('downsampled')
+
+        # Write the evaluation indicators of each round of Epoch to the log
+        writer.add_scalar(f"whatsapp Test/PSNR", psnr, epoch + 1)
+        writer.add_scalar(f"whatsapp Test/SSIM", ssim, epoch + 1)
+
+        psnr, ssim = test('downsampled', g_model,
+                          paired_test_data_prefetcher_2,
                           psnr_model,
                           ssim_model,
                           device,
@@ -164,8 +233,8 @@ def main():
         print("\n")
 
         # Write the evaluation indicators of each round of Epoch to the log
-        writer.add_scalar(f"Test/PSNR", psnr, epoch + 1)
-        writer.add_scalar(f"Test/SSIM", ssim, epoch + 1)
+        writer.add_scalar(f"downsampled Test/PSNR", psnr, epoch + 1)
+        writer.add_scalar(f"downsampled Test/SSIM", ssim, epoch + 1)
 
         # Automatically save model weights
         is_best = psnr > best_psnr and ssim > best_ssim
@@ -178,7 +247,7 @@ def main():
                          "state_dict": g_model.state_dict(),
                          "ema_state_dict": ema_g_model.state_dict() if ema_g_model is not None else None,
                          "optimizer": g_optimizer.state_dict()},
-                        f"epoch_{epoch + 1}.pth.tar",
+                        f"epoch_{epoch + 1}_g.pth.tar",
                         samples_dir,
                         results_dir,
                         "g_best.pth.tar",
@@ -190,7 +259,7 @@ def main():
                          "ssim": ssim,
                          "state_dict": d_model.state_dict(),
                          "optimizer": d_optimizer.state_dict()},
-                        f"epoch_{epoch + 1}.pth.tar",
+                        f"epoch_{epoch + 1}_d.pth.tar",
                         samples_dir,
                         results_dir,
                         "d_best.pth.tar",
@@ -202,17 +271,20 @@ def main():
 def load_dataset(
         config: Any,
         device: torch.device,
-) -> [CUDAPrefetcher, CUDAPrefetcher]:
+) -> [CPUPrefetcher, CPUPrefetcher]:
     # Load the train dataset
     degenerated_train_datasets = BaseImageDataset(
         config["TRAIN"]["DATASET"]["TRAIN_GT_IMAGES_DIR"],
-        None,
+        config["TRAIN"]["DATASET"]["TRAIN_LR_IMAGES_DIR"],
         config["SCALE"],
     )
 
     # Load the registration test dataset
-    paired_test_datasets = PairedImageDataset(config["TEST"]["DATASET"]["PAIRED_TEST_GT_IMAGES_DIR"],
-                                              config["TEST"]["DATASET"]["PAIRED_TEST_LR_IMAGES_DIR"])
+    paired_test_datasets_1 = PairedImageDataset(config["TEST"]["DATASET"]["PAIRED_TEST_GT_IMAGES_DIR_1"],
+                                              config["TEST"]["DATASET"]["PAIRED_TEST_LR_IMAGES_DIR_1"])
+    
+    paired_test_datasets_2 = PairedImageDataset(config["TEST"]["DATASET"]["PAIRED_TEST_GT_IMAGES_DIR_2"],
+                                              config["TEST"]["DATASET"]["PAIRED_TEST_LR_IMAGES_DIR_2"])
 
     # generate dataset iterator
     degenerated_train_dataloader = DataLoader(degenerated_train_datasets,
@@ -222,7 +294,14 @@ def load_dataset(
                                               pin_memory=config["TRAIN"]["HYP"]["PIN_MEMORY"],
                                               drop_last=True,
                                               persistent_workers=config["TRAIN"]["HYP"]["PERSISTENT_WORKERS"])
-    paired_test_dataloader = DataLoader(paired_test_datasets,
+    paired_test_dataloader_1 = DataLoader(paired_test_datasets_1,
+                                        batch_size=config["TEST"]["HYP"]["IMGS_PER_BATCH"],
+                                        shuffle=config["TEST"]["HYP"]["SHUFFLE"],
+                                        num_workers=config["TEST"]["HYP"]["NUM_WORKERS"],
+                                        pin_memory=config["TEST"]["HYP"]["PIN_MEMORY"],
+                                        drop_last=False,
+                                        persistent_workers=config["TEST"]["HYP"]["PERSISTENT_WORKERS"])
+    paired_test_dataloader_2 = DataLoader(paired_test_datasets_2,
                                         batch_size=config["TEST"]["HYP"]["IMGS_PER_BATCH"],
                                         shuffle=config["TEST"]["HYP"]["SHUFFLE"],
                                         num_workers=config["TEST"]["HYP"]["NUM_WORKERS"],
@@ -231,10 +310,11 @@ def load_dataset(
                                         persistent_workers=config["TEST"]["HYP"]["PERSISTENT_WORKERS"])
 
     # Replace the data set iterator with CUDA to speed up
-    train_data_prefetcher = CUDAPrefetcher(degenerated_train_dataloader, device)
-    paired_test_data_prefetcher = CUDAPrefetcher(paired_test_dataloader, device)
+    train_data_prefetcher = CPUPrefetcher(degenerated_train_dataloader)
+    paired_test_data_prefetcher_1 = CPUPrefetcher(paired_test_dataloader_1)
+    paired_test_data_prefetcher_2 = CPUPrefetcher(paired_test_dataloader_2)
 
-    return train_data_prefetcher, paired_test_data_prefetcher
+    return train_data_prefetcher, paired_test_data_prefetcher_1, paired_test_data_prefetcher_2 
 
 
 def build_model(
@@ -263,15 +343,21 @@ def build_model(
 
     # compile model
     backend = "inductor"
-    if torch.device == "mps":
+    if "mps" in device.type:
+        print('mps enabled')
         backend = "aot_eager"
-        x
+    
+    print('device', device.type, 'inductor', backend)
+
     if config["MODEL"]["G"]["COMPILED"]:
         g_model = torch.compile(g_model, backend=backend)
+        print('g model compiled')
     if config["MODEL"]["D"]["COMPILED"]:
+        print('d model compiled')
         d_model = torch.compile(d_model, backend=backend)
     if config["MODEL"]["EMA"]["COMPILED"] and ema_g_model is not None:
         ema_g_model = torch.compile(ema_g_model, backend=backend)
+        
 
     return g_model, ema_g_model, d_model
 
@@ -500,11 +586,14 @@ def train(
             writer.add_scalar("Train/D(SR)_Probability", torch.sigmoid_(torch.mean(sr_output.detach())).item(), iters)
             progress.display(batch_index)
 
+
         # Preload the next batch of data
         batch_data = train_data_prefetcher.next()
 
         # After training a batch of data, add 1 to the number of data batches to ensure that the terminal prints data normally
         batch_index += 1
+
+       
 
 
 if __name__ == "__main__":
